@@ -1,26 +1,51 @@
-const CACHE_NAME = "no-ads-cache-v1";
-const urlsToCache = [
-    "/",
-    "/index.html",
-    "/styles.css",
-    "/script.js",
-    "/logo.png"
-];
+const CACHE_NAME = "no-ads-cache-v2";
+const STATIC_ASSETS = ["/logo.png"];
 
-// Install event - caches files
 self.addEventListener("install", (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            return cache.addAll(urlsToCache);
-        })
-    );
+  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+  );
 });
 
-// Fetch event - serves cached files when offline
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    ).then(() => self.clients.claim())
+  );
+});
+
 self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+
+  // Only cache same-origin requests; let everything else pass through
+  if (url.origin !== self.location.origin) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // Network-first for HTML, CSS, JS — cache only as fallback
+  if (
+    url.pathname.endsWith(".html") ||
+    url.pathname.endsWith(".css") ||
+    url.pathname.endsWith(".js") ||
+    url.pathname === "/"
+  ) {
     event.respondWith(
-        caches.match(event.request).then((response) => {
-            return response || fetch(event.request);
+      fetch(event.request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
         })
+        .catch(() => caches.match(event.request))
     );
+    return;
+  }
+
+  // Cache-first for static assets (images, fonts, etc.)
+  event.respondWith(
+    caches.match(event.request).then((cached) => cached || fetch(event.request))
+  );
 });
