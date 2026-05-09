@@ -5,10 +5,8 @@ let ytApiReady            = false;
 let pendingPlaylistId     = null;
 let isPlaylistMode        = false;
 let playlistVideoIds      = [];
-let selectedPreviewIndex  = null;
 let currentlyPlayingIndex = 0;
 let titleFetchAbort       = null;
-let _justConfirmed        = false;
 
 // ── Service Worker ─────────────────────────────────────────
 if ("serviceWorker" in navigator) {
@@ -169,14 +167,11 @@ function openPlaylistPanel() {
     return;
   }
 
-  selectedPreviewIndex = null;
   _buildPanelItems();
 
   document.getElementById("ppPanel").classList.add("open");
   document.getElementById("ppBackdrop").classList.add("open");
   document.body.classList.add("panel-open");
-  _setPanelConfirmState(false);
-  document.getElementById("ppSelectionLabel").textContent = "Select a video below";
 }
 
 // ── Playlist browser: close ────────────────────────────────
@@ -184,7 +179,6 @@ function closePlaylistPanel() {
   document.getElementById("ppPanel")?.classList.remove("open");
   document.getElementById("ppBackdrop")?.classList.remove("open");
   document.body.classList.remove("panel-open");
-  selectedPreviewIndex = null;
 }
 
 // ── Build item list inside panel ───────────────────────────
@@ -222,16 +216,11 @@ function _buildPanelItems() {
       </div>
       <div class="pp-info">
         <p class="pp-title" id="ppTitle-${i}">Loading…</p>
-        <p class="pp-meta"  id="ppMeta-${i}">${isNow ? "Now playing" : ""}</p>
-      </div>
-      <div class="pp-check" id="ppCheck-${i}">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
+        <p class="pp-meta">${isNow ? "Now playing" : ""}</p>
       </div>
     `;
 
-    card.addEventListener("click", () => selectPreview(i));
+    card.addEventListener("click", () => playVideoAt(i));
     container.appendChild(card);
   });
 
@@ -249,61 +238,17 @@ function _buildPanelItems() {
   });
 }
 
-// ── Select a video for preview (no immediate playback) ─────
-function selectPreview(index) {
-  // Clear old selection
-  if (selectedPreviewIndex !== null) {
-    const old = document.getElementById(`ppItem-${selectedPreviewIndex}`);
-    if (old) {
-      old.classList.remove("selected");
-      document.getElementById(`ppCheck-${selectedPreviewIndex}`)?.classList.remove("visible");
-      const meta = document.getElementById(`ppMeta-${selectedPreviewIndex}`);
-      if (meta) {
-        meta.textContent = selectedPreviewIndex === currentlyPlayingIndex
-          ? "Now playing" : "";
-      }
-    }
-  }
-
-  selectedPreviewIndex = index;
-
-  const card = document.getElementById(`ppItem-${index}`);
-  if (card) {
-    card.classList.add("selected");
-    document.getElementById(`ppCheck-${index}`)?.classList.add("visible");
-    const meta = document.getElementById(`ppMeta-${index}`);
-    if (meta) {
-      meta.textContent = index === currentlyPlayingIndex
-        ? "Now playing · Selected" : "Selected";
-    }
-    card.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }
-
-  _setPanelConfirmState(true);
-
-  // Update footer label to show the selected title
-  const titleEl = document.getElementById(`ppTitle-${index}`);
-  const title   = titleEl?.textContent;
-  document.getElementById("ppSelectionLabel").textContent =
-    title && title !== "Loading…" ? `"${title}"` : `Video ${index + 1} selected`;
-}
-
-// ── Confirm selection: seamless switch via YT API ──────────
-function confirmVideoSelection() {
-  if (selectedPreviewIndex === null || !ytPlayer) return;
-  if (typeof ytPlayer.playVideoAt !== "function") {
+// ── Play a video immediately by index ─────────────────────
+function playVideoAt(index) {
+  if (!ytPlayer || typeof ytPlayer.playVideoAt !== "function") {
     showToast("Playback control isn't available yet.");
     return;
   }
 
-  const target = selectedPreviewIndex;
-  _justConfirmed = true;
+  ytPlayer.playVideoAt(index);
 
-  // playVideoAt causes no iframe reload — true seamless switch
-  ytPlayer.playVideoAt(target);
-
-  // Optimistically update header
-  const titleEl = document.getElementById(`ppTitle-${target}`);
+  // Update header label
+  const titleEl = document.getElementById(`ppTitle-${index}`);
   const title   = titleEl?.textContent;
   const label   = document.getElementById("videoLabel");
   if (label) {
@@ -312,9 +257,8 @@ function confirmVideoSelection() {
       : `▶ ${title && title !== "Loading…" ? title : "Playing playlist"}`;
   }
 
-  // Close panel after short delay — gives a satisfying confirmation feel
-  setTimeout(closePlaylistPanel, 240);
-  showToast("Switched — enjoy! 🎵");
+  closePlaylistPanel();
+  showToast("Playing now 🎵");
 }
 
 // ── Update the "now playing" highlight in panel ────────────
@@ -322,19 +266,16 @@ function _refreshCurrentCard() {
   document.querySelectorAll(".pp-item.now-playing").forEach(el => {
     el.classList.remove("now-playing");
     el.querySelector(".pp-now-badge")?.remove();
-    const numSpan = el.querySelector(".pp-num");
     const idx     = parseInt(el.dataset.index, 10);
-    if (!numSpan) {
-      const thumbWrap = el.querySelector(".pp-thumb-wrap");
-      if (thumbWrap) {
-        const s = document.createElement("span");
-        s.className   = "pp-num";
-        s.textContent = idx + 1;
-        thumbWrap.appendChild(s);
-      }
+    const thumbWrap = el.querySelector(".pp-thumb-wrap");
+    if (thumbWrap && !thumbWrap.querySelector(".pp-num")) {
+      const s = document.createElement("span");
+      s.className   = "pp-num";
+      s.textContent = idx + 1;
+      thumbWrap.appendChild(s);
     }
     const meta = el.querySelector(".pp-meta");
-    if (meta && !el.classList.contains("selected")) meta.textContent = "";
+    if (meta) meta.textContent = "";
   });
 
   const card = document.getElementById(`ppItem-${currentlyPlayingIndex}`);
@@ -343,8 +284,7 @@ function _refreshCurrentCard() {
 
   const thumbWrap = card.querySelector(".pp-thumb-wrap");
   if (thumbWrap && !thumbWrap.querySelector(".pp-now-badge")) {
-    const numSpan = thumbWrap.querySelector(".pp-num");
-    if (numSpan) numSpan.remove();
+    thumbWrap.querySelector(".pp-num")?.remove();
     const badge = document.createElement("span");
     badge.className   = "pp-now-badge";
     badge.textContent = "▶ NOW";
@@ -352,10 +292,7 @@ function _refreshCurrentCard() {
   }
 
   const meta = card.querySelector(".pp-meta");
-  if (meta) {
-    meta.textContent = card.classList.contains("selected")
-      ? "Now playing · Selected" : "Now playing";
-  }
+  if (meta) meta.textContent = "Now playing";
 }
 
 // ── Progressively fetch titles via YouTube oEmbed ─────────
@@ -382,7 +319,7 @@ async function fetchPlaylistTitles(ids) {
       if (el && el.textContent === "Loading…") el.textContent = `Video ${i + 1}`;
     }
 
-    await _sleep(55); // gentle stagger — keeps browser responsive
+    await _sleep(55);
   }
 }
 
@@ -397,7 +334,6 @@ function _setPlaylistMode(on) {
 function _resetPlayer() {
   closePlaylistPanel();
   playlistVideoIds      = [];
-  selectedPreviewIndex  = null;
   currentlyPlayingIndex = 0;
   if (titleFetchAbort) { titleFetchAbort.abort(); titleFetchAbort = null; }
   if (ytPlayer && typeof ytPlayer.destroy === "function") {
@@ -407,13 +343,6 @@ function _resetPlayer() {
 }
 
 // ── Helpers ────────────────────────────────────────────────
-function _setPanelConfirmState(enabled) {
-  const btn = document.getElementById("ppConfirm");
-  if (!btn) return;
-  btn.disabled = !enabled;
-  btn.classList.toggle("ready", enabled);
-}
-
 function _standardIframe(src) {
   const f = document.createElement("iframe");
   f.src   = src;
