@@ -15,68 +15,6 @@ if ("serviceWorker" in navigator) {
     .catch((e) => console.log("SW failed", e));
 }
 
-// ── Background / screen-off playback ──────────────────────
-// Strategy:
-//   1. Wake Lock API  — prevents screen sleep on Android Chrome
-//   2. Silent AudioContext — keeps iOS audio session alive so the
-//      YouTube iframe audio isn't suspended when screen turns off
-//   3. visibilitychange resume — re-triggers play on return if iOS
-//      paused the iframe while backgrounded
-
-let _wakeLock   = null;
-let _audioCtx   = null;
-let _silentNode = null;
-
-async function _acquireWakeLock() {
-  if (!("wakeLock" in navigator)) return;
-  try {
-    _wakeLock = await navigator.wakeLock.request("screen");
-    _wakeLock.addEventListener("release", () => { _wakeLock = null; });
-  } catch (_) {}
-}
-
-document.addEventListener("visibilitychange", async () => {
-  if (document.visibilityState === "visible") {
-    // Re-acquire wake lock if it was released (happens on tab switch)
-    if (!_wakeLock) await _acquireWakeLock();
-
-    // Resume if iOS paused the iframe while backgrounded
-    if (ytPlayer && typeof ytPlayer.getPlayerState === "function") {
-      try {
-        const state = ytPlayer.getPlayerState();
-        if (state === 2 || state === -1) ytPlayer.playVideo();
-      } catch (_) {}
-    }
-  }
-});
-
-// A near-silent oscillator keeps the iOS WebAudio session open, which
-// prevents the OS from suspending the YouTube iframe's audio track.
-function _startSilentAudio() {
-  if (_audioCtx) return;
-  try {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return;
-    _audioCtx   = new AC();
-    _silentNode = _audioCtx.createOscillator();
-    const gain  = _audioCtx.createGain();
-    gain.gain.setValueAtTime(0.00001, _audioCtx.currentTime); // inaudible
-    _silentNode.connect(gain);
-    gain.connect(_audioCtx.destination);
-    _silentNode.start();
-  } catch (_) {}
-}
-
-function _initBackgroundPlayback() {
-  _startSilentAudio();
-  _acquireWakeLock();
-}
-
-// Must be triggered from a user gesture to satisfy autoplay policy
-["touchstart", "mousedown", "keydown"].forEach(evt =>
-  document.addEventListener(evt, _initBackgroundPlayback, { once: true, passive: true })
-);
-
 // ── YouTube IFrame API bootstrap ───────────────────────────
 function loadYouTubeAPI() {
   if (document.getElementById("yt-api-script")) return;
@@ -199,9 +137,6 @@ function _initYTPlayer(playlistId) {
 }
 
 function _onPlayerReady(event) {
-  // Acquire/re-acquire wake lock now that media is active
-  _acquireWakeLock();
-
   if (shuffleEnabled) {
     event.target.setShuffle(true);
     event.target.playVideo();
@@ -413,8 +348,7 @@ function _standardIframe(src) {
   f.src   = src;
   f.setAttribute("allowfullscreen", "true");
   f.setAttribute("frameborder", "0");
-  f.setAttribute("playsinline", "true");
-  f.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; background-sync");
+  f.setAttribute("allow", "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share");
   f.style.cssText = "position:absolute;inset:0;width:100%;height:100%;border:none;";
   return f;
 }
