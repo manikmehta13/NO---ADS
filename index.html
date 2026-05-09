@@ -21,6 +21,52 @@
   <div class="orb orb-2"></div>
   <div class="orb orb-3"></div>
 
+  <!-- ── Playlist panel backdrop ── -->
+  <div id="ppBackdrop" class="pp-backdrop" onclick="closePlaylistPanel()"></div>
+
+  <!-- ── Playlist browser panel ── -->
+  <aside id="ppPanel" class="pp-panel" aria-label="Playlist browser" aria-hidden="true">
+
+    <div class="pp-header">
+      <div class="pp-header-left">
+        <!-- Queue icon -->
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="pp-header-icon">
+          <line x1="8"  y1="6"  x2="21" y2="6"/>
+          <line x1="8"  y1="12" x2="21" y2="12"/>
+          <line x1="8"  y1="18" x2="21" y2="18"/>
+          <circle cx="3" cy="6"  r="1.1" fill="currentColor"/>
+          <circle cx="3" cy="12" r="1.1" fill="currentColor"/>
+          <circle cx="3" cy="18" r="1.1" fill="currentColor"/>
+        </svg>
+        <span class="pp-header-title">Playlist</span>
+        <span id="ppCount" class="pp-count">— videos</span>
+      </div>
+      <button class="pp-close-btn" onclick="closePlaylistPanel()" title="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="pp-subheader">
+      <p class="pp-subtext">Browse videos while the current one plays. Select one, then confirm.</p>
+    </div>
+
+    <div id="ppItems" class="pp-items"></div>
+
+    <div class="pp-footer">
+      <p class="pp-selection-label" id="ppSelectionLabel">Select a video below</p>
+      <button id="ppConfirm" class="pp-confirm-btn" onclick="confirmVideoSelection()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 000-1.69L9.54 5.98A.998.998 0 008 6.82z"/>
+        </svg>
+        Play Selected
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- ── Page chrome ── -->
   <header class="site-header">
     <div class="logo-mark">
       <img src="logo.png" alt="Logo" width="28" height="28" />
@@ -62,7 +108,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
             <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
             <line x1="8" y1="18" x2="21" y2="18"/>
-            <circle cx="3" cy="6" r="1.2" fill="currentColor"/>
+            <circle cx="3" cy="6"  r="1.2" fill="currentColor"/>
             <circle cx="3" cy="12" r="1.2" fill="currentColor"/>
             <circle cx="3" cy="18" r="1.2" fill="currentColor"/>
           </svg>
@@ -74,7 +120,6 @@
       <div class="shuffle-row">
         <button id="shuffleToggle" class="shuffle-toggle" onclick="toggleShuffle()" title="Toggle playlist shuffle">
           <span class="shuffle-icon-wrap">
-            <!-- Shuffle SVG icon -->
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shuffle-icon">
               <polyline points="16 3 21 3 21 8"/>
               <line x1="4" y1="20" x2="21" y2="3"/>
@@ -91,15 +136,38 @@
       </div>
     </div>
 
+    <!-- ── Video section ── -->
     <div id="videoSection" class="video-section hidden">
       <div class="video-shell">
         <div class="video-top-bar">
           <span class="video-label" id="videoLabel">Now playing</span>
-          <button class="close-video" onclick="closeVideo()" title="Close">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </button>
+
+          <div class="video-top-actions">
+            <!-- Browse playlist button: hidden until a playlist is active -->
+            <button
+              id="browseBtn"
+              class="browse-btn"
+              onclick="openPlaylistPanel()"
+              title="Browse playlist"
+              style="display:none"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+                <line x1="8"  y1="6"  x2="21" y2="6"/>
+                <line x1="8"  y1="12" x2="21" y2="12"/>
+                <line x1="8"  y1="18" x2="21" y2="18"/>
+                <circle cx="3" cy="6"  r="1.1" fill="currentColor"/>
+                <circle cx="3" cy="12" r="1.1" fill="currentColor"/>
+                <circle cx="3" cy="18" r="1.1" fill="currentColor"/>
+              </svg>
+              Browse
+            </button>
+
+            <button class="close-video" onclick="closeVideo()" title="Close">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="video-frame-wrap" id="videoContainer"></div>
       </div>
@@ -112,7 +180,7 @@
       </div>
       <div class="feature-chip">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Playlists supported
+        Playlist browser
       </div>
       <div class="feature-chip">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -133,46 +201,47 @@
 
   <script src="script.js"></script>
   <script>
-    const input = document.getElementById('videoLink');
+    // ── Input wiring ───────────────────────────────────────
+    const input    = document.getElementById('videoLink');
     const clearBtn = document.getElementById('clearBtn');
 
     input.addEventListener('input', () => {
-      clearBtn.style.opacity = input.value ? '1' : '0';
+      clearBtn.style.opacity      = input.value ? '1' : '0';
       clearBtn.style.pointerEvents = input.value ? 'auto' : 'none';
     });
 
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
-        const v = input.value;
-        if (v.includes('list=')) embedPlaylist();
-        else embedVideo();
+        input.value.includes('list=') ? embedPlaylist() : embedVideo();
       }
     });
 
     function clearInput() {
       input.value = '';
-      clearBtn.style.opacity = '0';
+      clearBtn.style.opacity       = '0';
       clearBtn.style.pointerEvents = 'none';
       input.focus();
     }
 
     function closeVideo() {
       const sec = document.getElementById('videoSection');
-      const container = document.getElementById('videoContainer');
+      const vc  = document.getElementById('videoContainer');
+      closePlaylistPanel();
       sec.classList.add('hidden');
-      container.innerHTML = '';
-      // Also destroy any YT player instance
+      vc.innerHTML = '';
+      _setPlaylistMode(false);
       if (window.ytPlayer && typeof window.ytPlayer.destroy === 'function') {
         window.ytPlayer.destroy();
         window.ytPlayer = null;
       }
     }
 
-    const origEmbedVideo = window.embedVideo;
-    const origEmbedPlaylist = window.embedPlaylist;
+    // ── Wrap embedVideo / embedPlaylist to manage UI ───────
+    const _origEmbedVideo    = window.embedVideo;
+    const _origEmbedPlaylist = window.embedPlaylist;
 
     window.embedVideo = function () {
-      origEmbedVideo();
+      _origEmbedVideo();
       const sec = document.getElementById('videoSection');
       document.getElementById('videoLabel').textContent = 'Now playing';
       sec.classList.remove('hidden');
@@ -180,15 +249,19 @@
     };
 
     window.embedPlaylist = function () {
-      origEmbedPlaylist();
+      _origEmbedPlaylist();
       const sec = document.getElementById('videoSection');
-      const isShuffle = window.shuffleEnabled;
-      document.getElementById('videoLabel').textContent = isShuffle
+      document.getElementById('videoLabel').textContent = window.shuffleEnabled
         ? '🔀 Shuffling playlist'
         : 'Playing playlist';
       sec.classList.remove('hidden');
       setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
     };
+
+    // Close panel on Escape
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closePlaylistPanel();
+    });
   </script>
 </body>
 </html>
