@@ -69,6 +69,26 @@
           Load Playlist
         </button>
       </div>
+
+      <!-- Shuffle toggle row -->
+      <div class="shuffle-row">
+        <button id="shuffleToggle" class="shuffle-toggle" onclick="toggleShuffle()" title="Toggle playlist shuffle">
+          <span class="shuffle-icon-wrap">
+            <!-- Shuffle SVG icon -->
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shuffle-icon">
+              <polyline points="16 3 21 3 21 8"/>
+              <line x1="4" y1="20" x2="21" y2="3"/>
+              <polyline points="21 16 21 21 16 21"/>
+              <line x1="15" y1="15" x2="21" y2="21"/>
+            </svg>
+          </span>
+          <span id="shuffleLabel" class="shuffle-label">Shuffle Off</span>
+          <span id="shuffleIndicator" class="shuffle-pill">
+            <span class="shuffle-pip"></span>
+          </span>
+        </button>
+        <span class="shuffle-hint">Applies to playlists only</span>
+      </div>
     </div>
 
     <div id="videoSection" class="video-section hidden">
@@ -93,6 +113,10 @@
       <div class="feature-chip">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
         Playlists supported
+      </div>
+      <div class="feature-chip">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        Shuffle mode
       </div>
       <div class="feature-chip">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -137,12 +161,17 @@
       const container = document.getElementById('videoContainer');
       sec.classList.add('hidden');
       container.innerHTML = '';
+      // Also destroy any YT player instance
+      if (window.ytPlayer && typeof window.ytPlayer.destroy === 'function') {
+        window.ytPlayer.destroy();
+        window.ytPlayer = null;
+      }
     }
 
     const origEmbedVideo = window.embedVideo;
     const origEmbedPlaylist = window.embedPlaylist;
 
-    window.embedVideo = function() {
+    window.embedVideo = function () {
       origEmbedVideo();
       const sec = document.getElementById('videoSection');
       document.getElementById('videoLabel').textContent = 'Now playing';
@@ -150,10 +179,13 @@
       setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
     };
 
-    window.embedPlaylist = function() {
+    window.embedPlaylist = function () {
       origEmbedPlaylist();
       const sec = document.getElementById('videoSection');
-      document.getElementById('videoLabel').textContent = 'Playing playlist';
+      const isShuffle = window.shuffleEnabled;
+      document.getElementById('videoLabel').textContent = isShuffle
+        ? '🔀 Shuffling playlist'
+        : 'Playing playlist';
       sec.classList.remove('hidden');
       setTimeout(() => sec.scrollIntoView({ behavior: 'smooth', block: 'center' }), 80);
     };
