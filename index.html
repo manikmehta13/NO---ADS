@@ -29,7 +29,6 @@
 
     <div class="pp-header">
       <div class="pp-header-left">
-        <!-- Queue icon -->
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="pp-header-icon">
           <line x1="8"  y1="6"  x2="21" y2="6"/>
           <line x1="8"  y1="12" x2="21" y2="12"/>
@@ -49,20 +48,10 @@
     </div>
 
     <div class="pp-subheader">
-      <p class="pp-subtext">Browse videos while the current one plays. Select one, then confirm.</p>
+      <p class="pp-subtext">Tap any video to play it instantly.</p>
     </div>
 
     <div id="ppItems" class="pp-items"></div>
-
-    <div class="pp-footer">
-      <p class="pp-selection-label" id="ppSelectionLabel">Select a video below</p>
-      <button id="ppConfirm" class="pp-confirm-btn" onclick="confirmVideoSelection()" disabled>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 000-1.69L9.54 5.98A.998.998 0 008 6.82z"/>
-        </svg>
-        Play Selected
-      </button>
-    </div>
 
   </aside>
 
@@ -143,7 +132,6 @@
           <span class="video-label" id="videoLabel">Now playing</span>
 
           <div class="video-top-actions">
-            <!-- Browse playlist button: hidden until a playlist is active -->
             <button
               id="browseBtn"
               class="browse-btn"
