@@ -881,68 +881,7 @@ input::placeholder { color: var(--text-muted); }
   padding: 10px 0 4px;
 }
 
-/* Panel Footer */
-.pp-footer {
-  padding: 14px 14px 18px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  flex-shrink: 0;
-  background: rgba(255,255,255,0.02);
-}
-
-.pp-selection-label {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 300;
-  font-style: italic;
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pp-confirm-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 9px 16px;
-  cursor: pointer;
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  font-weight: 400;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-  transition: background 0.2s, border-color 0.2s, color 0.2s,
-              box-shadow 0.2s, transform 0.15s;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.pp-confirm-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pp-confirm-btn.ready {
-  background: var(--grad-main);
-  border-color: transparent;
-  color: #fff;
-  box-shadow: 0 4px 18px rgba(255,60,172,0.3);
-}
-
-.pp-confirm-btn.ready:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(255,60,172,0.4);
-}
-
-.pp-confirm-btn.ready:active { transform: scale(0.97); }
+/* (confirm footer removed — cards play directly on tap) */
 
 /* ── Animations ───────────────────────────────────────── */
 @keyframes fadeUp {
@@ -996,17 +935,7 @@ input::placeholder { color: var(--text-muted); }
 
   .pp-thumb-wrap { width: 72px; height: 40px; }
 
-  .pp-footer {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding-bottom: max(18px, env(safe-area-inset-bottom));
-  }
-
-  .pp-selection-label { text-align: center; }
-
-  .pp-confirm-btn {
-    justify-content: center;
-    padding: 12px;
+  .pp-items {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 }
