@@ -65,28 +65,7 @@
       <img src="logo.png" alt="Logo" width="28" height="28" />
       <span>NO·ADS</span>
     </div>
-    <div class="header-right">
-      <button id="signInBtn" class="sign-in-btn" onclick="signInGoogle()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-        </svg>
-        Sign in
-      </button>
-      <div id="userProfile" class="user-profile hidden">
-        <img class="user-avatar" src="logo.png" alt="" width="26" height="26" />
-        <span class="user-name"></span>
-        <button class="sign-out-btn" onclick="signOut()" title="Sign out">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-            <polyline points="16 17 21 12 16 7"/>
-            <line x1="21" y1="12" x2="9" y2="12"/>
-          </svg>
-        </button>
-      </div>
-    </div>
+    <div class="pill-badge">Ad-free viewing</div>
   </header>
 
   <main class="main-content">
@@ -150,41 +129,6 @@
       </div>
     </div>
 
-    <!-- ── Category bar ── -->
-    <div class="cat-bar-wrap">
-      <button class="cat-toggle" id="catToggle" onclick="toggleCatBar()" title="Toggle categories">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-bar" id="catBar">
-      <button class="cat-btn active" data-cat="trending" onclick="loadCategory('trending')">Trending</button>
-      <button class="cat-btn" data-cat="shorts" onclick="loadCategory('shorts')">Shorts</button>
-      <button class="cat-btn" data-cat="music" onclick="loadCategory('music')">Music</button>
-      <button class="cat-btn" data-cat="gaming" onclick="loadCategory('gaming')">Gaming</button>
-      <button class="cat-btn" data-cat="live" onclick="loadCategory('live')">Live</button>
-      <button class="cat-btn" data-cat="news" onclick="loadCategory('news')">News</button>
-      <button class="cat-btn" data-cat="sports" onclick="loadCategory('sports')">Sports</button>
-      <button class="cat-btn" data-cat="movies" onclick="loadCategory('movies')">Movies</button>
-      <button class="cat-btn" data-cat="shopping" onclick="loadCategory('shopping')">Shopping</button>
-      <button class="cat-btn" data-cat="fashion" onclick="loadCategory('fashion')">Fashion &amp; Beauty</button>
-      <button class="cat-btn" data-cat="courses" onclick="loadCategory('courses')">Courses</button>
-      <button class="cat-btn" data-cat="recommendations" onclick="loadCategory('recommendations')">Recommendations</button>
-      </div>
-    </div>
-
-    <!-- ── Video feed ── -->
-    <div id="feedSection" class="feed-section">
-      <div class="feed-header">
-        <svg id="feedHeaderIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
-          <polyline points="17 6 23 6 23 12"/>
-        </svg>
-        <span id="feedHeaderLabel">Trending</span>
-      </div>
-      <div class="feed-grid" id="feedGrid">
-        <div class="feed-status">Sign in with Google to see trending videos.</div>
-      </div>
-    </div>
-
     <!-- ── Video section ── -->
     <div id="videoSection" class="video-section hidden">
       <div class="video-shell">
@@ -219,19 +163,6 @@
         </div>
         <div class="video-frame-wrap" id="videoContainer"></div>
       </div>
-
-      <!-- ── Recommendations ── -->
-      <div id="recSection" class="rec-section hidden">
-        <div class="rec-header">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
-            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/>
-            <line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          <span>Recommendations</span>
-        </div>
-        <div id="recItems" class="rec-items"></div>
-      </div>
     </div>
 
     <div class="feature-row">
@@ -257,58 +188,9 @@
       </div>
     </div>
 
+    <p class="footnote">Live streams may not always be supported.</p>
   </main>
 
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script>
-    // ── Firebase init ─────────────────────────────────────────
-    const firebaseConfig = {
-      apiKey: "AIzaSyCEcuMlsJEtF0uMZKGe5AII--fEfaf4OHE",
-      authDomain: "vid-x-serve-2.firebaseapp.com",
-      projectId: "vid-x-serve-2",
-      storageBucket: "vid-x-serve-2.appspot.com",
-      messagingSenderId: "202993975846",
-      appId: "1:202993975846:web:1ed557fd1fdef345cf1ce7",
-      measurementId: "G-TXKFCHT2JS"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-
-    // ── Auth state ────────────────────────────────────────────
-    auth.onAuthStateChanged(user => {
-      const profile = document.getElementById('userProfile');
-      const signIn = document.getElementById('signInBtn');
-      if (user) {
-        profile.querySelector('.user-avatar').src = user.photoURL || 'logo.png';
-        profile.querySelector('.user-name').textContent = user.displayName || user.email || 'User';
-        profile.classList.remove('hidden');
-        signIn.classList.add('hidden');
-        window.ytApiKey = 'AIzaSyCSziPJU-5PbgB9rpjlMR3uUQBPkgL_8xE';
-        if (window.loadCategory) {
-          window.loadCategory('trending');
-        }
-      } else {
-        profile.querySelector('.user-avatar').src = 'logo.png';
-        profile.querySelector('.user-name').textContent = '';
-        profile.classList.add('hidden');
-        signIn.classList.remove('hidden');
-        window.ytApiKey = '';
-      }
-    });
-
-    async function signInGoogle() {
-      try {
-        await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
-      } catch (_) {}
-    }
-
-    async function signOut() {
-      await auth.signOut();
-      window.ytApiKey = '';
-      if (window._clearFeed) window._clearFeed();
-    }
-  </script>
   <script src="script.js"></script>
   <script>
     // ── Input wiring ───────────────────────────────────────
@@ -336,15 +218,10 @@
     function closeVideo() {
       const sec = document.getElementById('videoSection');
       const vc  = document.getElementById('videoContainer');
-      const rs  = document.getElementById('recSection');
       closePlaylistPanel();
       sec.classList.add('hidden');
       vc.innerHTML = '';
-      rs.classList.add('hidden');
-      rs.querySelector('#recItems').innerHTML = '';
       _setPlaylistMode(false);
-      singleVideoAutoPlay = false;
-      if (recFetchAbort) { recFetchAbort.abort(); recFetchAbort = null; }
       if (window.ytPlayer && typeof window.ytPlayer.destroy === 'function') {
         window.ytPlayer.destroy();
         window.ytPlayer = null;
