@@ -7,6 +7,8 @@ let isPlaylistMode        = false;
 let playlistVideoIds      = [];
 let currentlyPlayingIndex = 0;
 let titleFetchAbort       = null;
+let playlistTitleCache    = new Map();
+let playlistTitleFailures = new Set();
 
 // ── Service Worker ─────────────────────────────────────────
 if ("serviceWorker" in navigator) {
@@ -134,6 +136,7 @@ function toggleShuffle() {
 function embedVideo() {
   const link    = document.getElementById("videoLink").value;
   const videoId = extractVideoID(link);
+  const liveChannelId = extractLiveChannelID(link);
   const vc      = document.getElementById("videoContainer");
 
   _resetPlayer();
@@ -144,8 +147,12 @@ function embedVideo() {
     vc.appendChild(_standardIframe(
       `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`
     ));
+  } else if (liveChannelId) {
+    vc.appendChild(_standardIframe(
+      `https://www.youtube.com/embed/live_stream?channel=${liveChannelId}&autoplay=1&rel=0&modestbranding=1`
+    ));
   } else {
-    showToast("Please enter a valid YouTube link.");
+    showToast("Please enter a valid YouTube video or live link.");
   }
 }
 
@@ -280,13 +287,14 @@ function _buildPanelItems() {
         ${isNow ? `<span class="pp-now-badge">▶ NOW</span>` : `<span class="pp-num">${i + 1}</span>`}
       </div>
       <div class="pp-info">
-        <p class="pp-title" id="ppTitle-${i}">Loading…</p>
+        <p class="pp-title" id="ppTitle-${i}">Loading...</p>
         <p class="pp-meta">${isNow ? "Now playing" : ""}</p>
       </div>
     `;
 
     card.addEventListener("click", () => playVideoAt(i));
     container.appendChild(card);
+    _renderPlaylistTitle(i, id);
   });
 
   if (total > 200) {
@@ -301,6 +309,10 @@ function _buildPanelItems() {
     const el = document.getElementById(`ppItem-${currentlyPlayingIndex}`);
     if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
   });
+
+  if (!titleFetchAbort && playlistVideoIds.some(id => !playlistTitleCache.has(id))) {
+    fetchPlaylistTitles(playlistVideoIds);
+  }
 }
 
 // ── Play a video immediately by index ─────────────────────
@@ -319,7 +331,7 @@ function playVideoAt(index) {
   if (label) {
     label.textContent = shuffleEnabled
       ? "🔀 Shuffling playlist"
-      : `▶ ${title && title !== "Loading…" ? title : "Playing playlist"}`;
+      : `▶ ${title && title !== "Loading..." ? title : "Playing playlist"}`;
   }
 
   closePlaylistPanel();
@@ -360,7 +372,7 @@ function _refreshCurrentCard() {
   if (meta) meta.textContent = "Now playing";
 }
 
-// ── Progressively fetch titles via YouTube oEmbed ─────────
+// ── Progressively fetch titles via oEmbed ─────────────────
 async function fetchPlaylistTitles(ids) {
   if (titleFetchAbort) titleFetchAbort.abort();
   const ctrl  = new AbortController();
@@ -368,24 +380,70 @@ async function fetchPlaylistTitles(ids) {
 
   const limit = Math.min(ids.length, 200);
 
-  for (let i = 0; i < limit; i++) {
-    if (ctrl.signal.aborted) break;
+  try {
+    for (let i = 0; i < limit; i++) {
+      if (ctrl.signal.aborted) break;
 
-    const url = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${ids[i]}&format=json`;
+      const id = ids[i];
+      if (playlistTitleCache.has(id)) {
+        _renderPlaylistTitle(i, id);
+        continue;
+      }
+
+      try {
+        const title = await _fetchVideoTitle(id, ctrl.signal);
+        if (title) {
+          playlistTitleFailures.delete(id);
+          playlistTitleCache.set(id, title);
+        }
+        else playlistTitleFailures.add(id);
+      } catch (e) {
+        if (e.name === "AbortError") break;
+        playlistTitleFailures.add(id);
+      }
+
+      _renderPlaylistTitle(i, id);
+      await _sleep(55);
+    }
+  } finally {
+    if (titleFetchAbort === ctrl) titleFetchAbort = null;
+  }
+}
+
+function _renderPlaylistTitle(index, id) {
+  const el = document.getElementById(`ppTitle-${index}`);
+  if (!el) return;
+
+  if (playlistTitleCache.has(id)) {
+    el.textContent = playlistTitleCache.get(id);
+    return;
+  }
+
+  el.textContent = playlistTitleFailures.has(id) ? `Video ${index + 1}` : "Loading...";
+}
+
+async function _fetchVideoTitle(id, signal) {
+  const watchUrl = `https://www.youtube.com/watch?v=${id}`;
+  const endpoints = [
+    `https://noembed.com/embed?url=${encodeURIComponent(watchUrl)}`,
+    `https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`,
+  ];
+
+  let lastError = null;
+  for (const endpoint of endpoints) {
     try {
-      const res  = await fetch(url, { signal: ctrl.signal });
+      const res = await fetch(endpoint, { signal });
       if (!res.ok) throw new Error("non-200");
       const data = await res.json();
-      const el   = document.getElementById(`ppTitle-${i}`);
-      if (el) el.textContent = data.title || `Video ${i + 1}`;
+      if (data?.title) return data.title;
     } catch (e) {
-      if (e.name === "AbortError") break;
-      const el = document.getElementById(`ppTitle-${i}`);
-      if (el && el.textContent === "Loading…") el.textContent = `Video ${i + 1}`;
+      if (e.name === "AbortError") throw e;
+      lastError = e;
     }
-
-    await _sleep(55);
   }
+
+  if (lastError) throw lastError;
+  return null;
 }
 
 // ── Show / hide the Browse button ─────────────────────────
@@ -400,6 +458,8 @@ function _resetPlayer() {
   closePlaylistPanel();
   playlistVideoIds      = [];
   currentlyPlayingIndex = 0;
+  playlistTitleCache.clear();
+  playlistTitleFailures.clear();
   if (titleFetchAbort) { titleFetchAbort.abort(); titleFetchAbort = null; }
   if (ytPlayer && typeof ytPlayer.destroy === "function") {
     ytPlayer.destroy();
@@ -419,14 +479,78 @@ function _standardIframe(src) {
   return f;
 }
 
-function extractVideoID(url) {
-  const m = url.match(/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed|live)?)\/|.*[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+function extractVideoID(value) {
+  const parsed = _parseMaybeURL(value);
+  if (parsed && _isYouTubeHost(parsed.hostname)) {
+    const fromQuery = parsed.searchParams.get("v");
+    if (_isYouTubeVideoId(fromQuery)) return fromQuery;
+
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    if (_normalizeHost(parsed.hostname) === "youtu.be" && _isYouTubeVideoId(parts[0])) {
+      return parts[0];
+    }
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (["embed", "live", "shorts", "v"].includes(parts[i]) && _isYouTubeVideoId(parts[i + 1])) {
+        return parts[i + 1];
+      }
+    }
+  }
+
+  const text = String(value || "");
+  const m = text.match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:.*?[?&]v=|(?:embed|live|shorts|v)\/))([a-zA-Z0-9_-]{11})/i);
   return m ? m[1] : null;
 }
 
 function extractPlaylistID(url) {
   const m = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
   return m ? m[1] : null;
+}
+
+function extractLiveChannelID(value) {
+  const parsed = _parseMaybeURL(value);
+  if (!parsed || !_isYouTubeHost(parsed.hostname)) return null;
+
+  const parts = parsed.pathname.split("/").filter(Boolean);
+  const channelIndex = parts.indexOf("channel");
+  const channelId = channelIndex >= 0 ? parts[channelIndex + 1] : null;
+
+  if (parts.includes("live") && channelId && /^UC[a-zA-Z0-9_-]{20,}$/.test(channelId)) {
+    return channelId;
+  }
+
+  return null;
+}
+
+function _parseMaybeURL(value) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+
+  try {
+    return new URL(text);
+  } catch (_) {
+    try {
+      return new URL(`https://${text}`);
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+function _normalizeHost(hostname) {
+  return String(hostname || "").toLowerCase().replace(/^(www\.|m\.)/, "");
+}
+
+function _isYouTubeHost(hostname) {
+  const host = _normalizeHost(hostname);
+  return host === "youtu.be" ||
+    host === "youtube.com" ||
+    host === "youtube-nocookie.com" ||
+    host === "music.youtube.com";
+}
+
+function _isYouTubeVideoId(value) {
+  return /^[a-zA-Z0-9_-]{11}$/.test(value || "");
 }
 
 function _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
