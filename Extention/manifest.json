@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube → No-Ads Opener",
+  "version": "1.3.0",
+  "description": "Automatically opens YouTube videos and playlists in your No-Ads PWA.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "*://www.youtube.com/*",
+    "*://m.youtube.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*"
+      ],
+      "js": ["redirect.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://www.youtube.com/*",
+        "*://m.youtube.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "No-Ads Opener"
+  }
+}
